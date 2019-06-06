@@ -13,7 +13,7 @@ server.use(express.json());
 server.use(cors());
 
 server.get('/', (req, res) => {
-  res.send("It's alive!");
+  res.send("Is this thing working?");
 });
 
 
