@@ -2,12 +2,26 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const session = require('express-session');
+
 
 const db = require('./database/dbConfig.js');
 const Users = require('./users/users-model.js');
 
 const server = express();
+const sessionConfig = {
+  name: 'Joker',
+  secret: 'secret string',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production' ? true : false,
+    httpOnly: true
+  }
+}
 
+server.use(session(sessionConfig));
 server.use(helmet());
 server.use(express.json());
 server.use(cors());
@@ -17,7 +31,6 @@ server.get('/', (req, res) => {
 });
 
 // Register
-
 server.post('/api/register', (req, res) => {
     let user = req.body;
   
@@ -90,6 +103,9 @@ server.post('/api/register', (req, res) => {
       });
   }
   
+
+  // USERS
+
   server.get('/api/users', authorize, (req, res) => {
     Users.find()
       .then(users => {
