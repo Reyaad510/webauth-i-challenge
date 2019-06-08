@@ -76,6 +76,7 @@ server.post('/api/register', (req, res) => {
         }
   
         if (user && bcrypt.compareSync(password, user.password)) {
+          req.session.user = user;
           res.status(200).json({ message: `Welcome ${user.username}!` });
         } else {
           res.status(401).json({ message: 'You shall not pass!' });
