@@ -3,6 +3,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
+const SessionStore = require('connect-session-knex')(session);
 
 
 const db = require('./database/dbConfig.js');
@@ -11,14 +12,21 @@ const Users = require('./users/users-model.js');
 const server = express();
 const sessionConfig = {
   name: 'Joker',
-  secret: 'secret string',
+  secret: 'super secret string',
   resave: false,
   saveUninitialized: false,
   cookie: {
     maxAge: 60 * 60 * 1000,
     secure: process.env.NODE_ENV === 'production' ? true : false,
     httpOnly: true
-  }
+  },
+store: new SessionStore({
+  knex: require('./database/dbConfig'),
+  tablename: 'sessions',
+  sidfieldname: 'sid',
+  createTable: true,
+  clearInterval: 60 * 60 * 1000
+})
 }
 
 server.use(session(sessionConfig));
@@ -78,31 +86,6 @@ server.post('/api/register', (req, res) => {
       });
   });
   
-  
-  // MIDDLE WARE
-  function authorize(req, res, next) {
-    const username = req.headers['x-username'];
-    const password = req.headers['x-password'];
-  
-    Users.findBy({ username })
-      .first()
-      .then(user => {
-  
-        if(!username || !password) {
-          return res.status(401).json({ message: 'Invalid Credentials' })
-        }
-  
-        if (user && bcrypt.compareSync(password, user.password)) {
-          next()
-        } else {
-          res.status(401).json({ message: 'You shall not pass!' });
-        }
-      })
-      .catch(error => {
-        res.status(500).json(error);
-      });
-  }
-  
 
   // USERS
 
@@ -114,6 +97,59 @@ server.post('/api/register', (req, res) => {
       .catch(err => res.send(err));
   });
 
+
+
+  // Logout
+  server.get('/api/logout', authorize, (req, res) => {
+    req.session.destroy(err => {
+      if(err) {
+        console.log(err);
+        return res.status(500).json({ message: 'There was an error' });
+      }
+      res.end();
+    })
+  })
+
+
+
+
+
+   // MIDDLE WARE
+   function authorize(req, res, next) {
+
+    if(req.session && req.session.user) {
+      next();
+    } else {
+      res.status(401).json({ message: 'You are not authorized' })
+    }
+  }
+
+
+
+
+
+
+  //   const username = req.headers['x-username'];
+  //   const password = req.headers['x-password'];
+  
+  //   Users.findBy({ username })
+  //     .first()
+  //     .then(user => {
+  
+  //       if(!username || !password) {
+  //         return res.status(401).json({ message: 'Invalid Credentials' })
+  //       }
+  
+  //       if (user && bcrypt.compareSync(password, user.password)) {
+  //         next()
+  //       } else {
+  //         res.status(401).json({ message: 'You shall not pass!' });
+  //       }
+  //     })
+  //     .catch(error => {
+  //       res.status(500).json(error);
+  //     });
+  // }
 
 
 
